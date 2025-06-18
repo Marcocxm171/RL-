@@ -1,0 +1,6 @@
+git add * 
+Adds all the current files into the staging bit
+git commit -m "description"
+Commits/saves everything in the staging part to the branch (you're working on) with the description of what's in the bracket
+git push
+Saves everything to github

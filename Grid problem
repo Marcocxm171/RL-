@@ -1,13 +1,156 @@
 import numpy as np
 import random as rand
 
-#setting up the environment
-grid = np.array([[25, 24, 23, 22, 21],
-[20, 19, 18, 17, 16],
-[15, 14, 13, 12, 11],
-[10, 9, 8, 7, 6],
-[5, 4, 3, 2, 1]])
+#Lr = learning rate
+#set probability of favoured decision = 0.9
 
-Q_table = np.random.randint(25,75,)
+# 1. table of possible actions from each state
 
-print(grid)
+choice = np.array([[0,-1], [0,+1], [-1,0],[+1,0]])
+
+action = np.zeros((25,4))
+
+for x in range (0,5):
+    for y in range(0,5):
+
+        s = x + 5*y
+        for a in range (0,4):
+        
+        #0=up(0,-1)
+        #1=down(0,+1)
+        #2=left(-1,0)
+        #3=right(+1,0)
+
+            next_x = x + choice[a,0]
+            next_y = y + choice[a,1]
+            action[s,a] = next_x + 5*next_y
+
+            if next_x < 0 or next_x >4 or next_y < 0 or next_y >4:
+                action[s,a] = s
+
+# 2. generate the intial Q-table
+
+Q_table = np.random.randint(0,50,(25,4))
+
+# 3. Path decider
+#function to decide what moves to take
+#to implement the 90% good decision system 
+# apply a 100-sided dice 
+# if value is between 1-90 = rational
+# if value is between 91-100 - irrational/random
+
+def pathdecider(state,action,epsilon):
+    rationality = rand.randint(1,100)
+
+    if rationality <= epsilon:
+        
+        #find the index of the highest q-value at this given state
+        position_max = np.argmax(action[state,:])
+        next_state = action[state,position_max]
+        choosen_action = position_max
+
+    else:
+        a = rand.randint(0,3)
+        next_state = action[state,a]
+        choosen_action = a
+
+    return next_state,choosen_action
+
+
+
+# 6. how to determine the reward
+# I have choosen 7,8,13,10,15 to be hazardous
+# destination is at state 24 - which is bottom right on my 5x5 grid
+#punishment list
+# each step -1 (to deter bot from wandering)
+# hazardous -100
+# bumping into the wall -10 (i.e. not changed state after a move)
+# reaching destination +100
+
+def reward_system (current_state,next_state): 
+
+    if next_state == 7 or next_state == 8 or next_state == 10 or next_state == 13 or next_state == 15:
+        reward = int(-100)
+    elif next_state == current_state:
+        reward = int(-50)
+    elif next_state == 24:
+        reward = 100
+    else: 
+        reward = int(-5)
+
+    return reward
+
+#5. Q-table updating function
+
+def Q_cal(Q_table,action,state, next_state ,action_choosen,reward, Lr):
+    
+    position_max = np.max(Q_table[next_state,:])
+
+    new = Q_table[state,action_choosen] + Lr*(reward + 0.9*(position_max) - Q_table[state,action_choosen])
+
+    return new 
+
+# 6. main testing programme
+
+# start from state 0, (0,0) (topleft of my 5x5 grid)
+
+for i in range(1000): 
+    state = 0
+    step = 0
+
+    #introduce epsilon - probability of the irrational decision decreases overtime
+    epsilon = 90
+    while step <= 50 or state != 24: 
+
+        # first decide the step you will take + take down which action is taken
+
+        decision_made = pathdecider(state,action,epsilon)
+        next_state = int(decision_made[0])
+        action_choosen =  int(decision_made[1])
+
+        #decide the reward of this action
+
+        reward = reward_system(state,next_state)
+
+        #update Q-table
+
+        Q_table[state,action_choosen] = Q_cal(Q_table, action, state, next_state ,action_choosen,reward,0.9)
+
+        step = step + 1
+        state = next_state
+        epsilon = 1-(1-epsilon)*0.9
+
+# 7. Visualisation - to help me to verify the bot has developed understanding
+
+# convert the Q-table into a map of the best action in each state
+
+arrow_map = np.zeros((5,5),dtype=str)
+position_max = np.zeros(25)
+
+for i in range(5): 
+    for j in range(5):
+
+        #determine the position of highest Q_value at each state
+        state = i+5*j
+        
+        position_max[state] = np.argmax(Q_table[state,:])
+
+        if position_max[state] == 0: 
+            arrow_map[j,i] = str("↑")
+        if position_max[state] == 1: 
+            arrow_map[j,i] = str("↓")
+        if position_max[state] == 2: 
+            arrow_map[j,i] = str("←")
+        if position_max[state] == 3: 
+            arrow_map[j,i] = str("→")
+
+
+arrow_map[4,4]= ("D")
+arrow_map[2,0]=("H")
+arrow_map[3,0]=("H")
+arrow_map[1,2]=("H")
+arrow_map[1,3]=("H")
+arrow_map[2,3]=("H")
+print(Q_table)
+print(position_max)
+print(arrow_map)

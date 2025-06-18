@@ -1,0 +1,23 @@
+import numpy as np
+
+
+arrow_map = np.zeros((5,5))
+
+for i in range(5): 
+    for j in range(5):
+
+        #determine the position of highest Q_value at each state
+        state = i+5*j
+        
+        position_max = np.max(action[state,:])
+
+        if position_max == 0: 
+            arrow_map[i,j] = "↑"
+        if position_max == 1: 
+            arrow_map[i,j] = "↓"
+        if position_max == 2: 
+            arrow_map[i,j] = "←"
+        else: 
+            arrow_map[i,j] = "→"
+
+print(arrow_map)
